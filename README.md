@@ -207,7 +207,73 @@ print(f"Generated STIX 2.1 Bundle: {stix_bundle['id']}")
 
 ---
 
-## 7. CLI Usage
+## 7. Turnkey REST Incident Server & Docker Deployment
+
+SentinelTrace-EDR includes a production-grade FastAPI telemetry ingestion service and interactive SOC Incident Response console.
+
+### 1. Launch Server via CLI
+
+```bash
+# Start standalone EDR telemetry service on port 8090
+sentineltrace serve --host 0.0.0.0 --port 8090
+```
+
+Once initialized:
+- **Interactive SOC Analyst Console:** [`http://localhost:8090/`](http://localhost:8090/)
+- **Interactive Swagger / OpenAPI Docs:** [`http://localhost:8090/docs`](http://localhost:8090/docs)
+- **Engine Health & Merkle Chain Check:** [`http://localhost:8090/health`](http://localhost:8090/health)
+- **STIX 2.1 CTI Threat Bundle Export:** [`http://localhost:8090/v1/stix/bundle`](http://localhost:8090/v1/stix/bundle)
+- **DFIR Incident Report Summary:** [`http://localhost:8090/v1/forensics/report`](http://localhost:8090/v1/forensics/report)
+
+### 2. Standalone Container Execution (Docker)
+
+```bash
+# Build production image
+docker build -t sentineltrace-edr:latest .
+
+# Run standalone container
+docker run -d --name sentineltrace-daemon -p 8090:8090 sentineltrace-edr:latest
+
+# Verify service health
+curl -s http://localhost:8090/health
+```
+
+### 3. REST API Usage Examples
+
+**Ingest Process Telemetry Event (Office Macro Spawning PowerShell):**
+```bash
+curl -X POST http://localhost:8090/v1/telemetry/event \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "PROCESS_START",
+    "pid": 3100,
+    "ppid": 2040,
+    "process_name": "powershell.exe",
+    "parent_name": "winword.exe",
+    "command_line": "powershell.exe -w hidden -enc JABjAGwAaQBl...",
+    "image_path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "user": "CORP\\victim"
+  }'
+```
+
+**Query Ancestry Lineage Tree for Process:**
+```bash
+curl -s http://localhost:8090/v1/lineage/3100
+```
+
+**Export STIX 2.1 Threat Bundle for SIEM Ingestion:**
+```bash
+curl -s http://localhost:8090/v1/stix/bundle
+```
+
+**Cryptographically Verify Forensic Audit Chain:**
+```bash
+curl -s http://localhost:8090/v1/forensics/verify
+```
+
+---
+
+## 8. CLI Usage
 
 ### 1. Run Multi-Stage Cyber Attack Simulation
 
@@ -260,15 +326,15 @@ sentineltrace bench -n 50000
 
 ---
 
-## 8. Test Suite Execution
+## 9. Test Suite Execution
 
-Run the complete 12-case test suite covering DAG ancestry resolution, LOLBin detectors, Sigma rules, and cryptographic audit tampering:
+Run the complete 16-case test suite covering DAG ancestry resolution, LOLBin detectors, Sigma rules, cryptographic audit tampering, and REST API endpoints:
 
 ```bash
 pytest -v
 ```
 
-All 12 test scenarios pass deterministically:
+All 16 test scenarios pass deterministically:
 ```text
 tests/test_audit.py::test_forensic_chain_continuous_hashing PASSED
 tests/test_audit.py::test_forensic_chain_detects_evidence_tampering PASSED
@@ -282,10 +348,14 @@ tests/test_lineage.py::test_process_termination_state PASSED
 tests/test_rules.py::test_sigma_certutil_download_rule PASSED
 tests/test_rules.py::test_sigma_powershell_encoded_rule PASSED
 tests/test_rules.py::test_sigma_benign_command_clean PASSED
+tests/test_server.py::test_health_check PASSED
+tests/test_server.py::test_dashboard_ui PASSED
+tests/test_server.py::test_ingest_malicious_event_and_lineage PASSED
+tests/test_server.py::test_stix_and_forensics_endpoints PASSED
 ```
 
 ---
 
-## 9. License
+## 10. License
 
 MIT License. Copyright (c) 2026 Huighlet Eyram Zowonu.

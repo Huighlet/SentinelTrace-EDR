@@ -180,8 +180,16 @@ def main() -> None:
     bench_p = subparsers.add_parser("bench", help="Run event throughput micro-benchmark")
     bench_p.add_argument("-n", "--count", type=int, default=30000, help="Number of events")
 
+    # Serve
+    serve_p = subparsers.add_parser("serve", help="Launch FastAPI SOC Incident & Telemetry REST service")
+    serve_p.add_argument("--host", default="0.0.0.0", help="Binding host address")
+    serve_p.add_argument("--port", type=int, default=8090, help="Binding port (default: 8090)")
+
     args = parser.parse_args()
-    if args.command == "simulate":
+    if args.command == "serve":
+        from sentineltrace.server import serve
+        serve(host=args.host, port=args.port)
+    elif args.command == "simulate":
         cmd_simulate()
     elif args.command == "bench":
         cmd_bench(args.count)
